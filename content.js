@@ -7,16 +7,31 @@ let rafPending = false;
 let lastEvent = null;
 let enabled = true;
 
-chrome.storage.sync.get(["enabled", "fontSize", "maxWidth"], (data) => {
+function applyBgColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  // Keep the lens slightly translucent regardless of the chosen color
+  lens.style.background = `rgba(${r}, ${g}, ${b}, 0.96)`;
+
+  // Pick light or dark text depending on background brightness
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  lens.style.color = luminance > 0.5 ? "#050505" : "#f5f5f5";
+}
+
+chrome.storage.sync.get(["enabled", "fontSize", "maxWidth", "bgColor"], (data) => {
   enabled = data.enabled ?? true;
   lens.style.fontSize = (data.fontSize || 22) + "px";
   lens.style.maxWidth = (data.maxWidth || 400) + "px";
+  applyBgColor(data.bgColor || "#f5f50a");
 });
 
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.enabled) enabled = changes.enabled.newValue;
   if (changes.fontSize) lens.style.fontSize = changes.fontSize.newValue + "px";
   if (changes.maxWidth) lens.style.maxWidth = changes.maxWidth.newValue + "px";
+  if (changes.bgColor) applyBgColor(changes.bgColor.newValue);
 });
 
 function activate(e) {
