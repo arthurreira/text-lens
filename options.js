@@ -18,15 +18,36 @@ chrome.storage.sync.get(["fontSize", "maxWidth", "bgColor"], (data) => {
 
 fontSize.addEventListener("input", () => {
   fontSizeValue.textContent = fontSize.value;
-  chrome.storage.sync.set({ fontSize: Number(fontSize.value) });
+  saveFontSize(fontSize.value);
 });
 
 maxWidth.addEventListener("input", () => {
   maxWidthValue.textContent = maxWidth.value;
-  chrome.storage.sync.set({ maxWidth: Number(maxWidth.value) });
+  saveMaxWidth(maxWidth.value);
 });
 
 bgColor.addEventListener("input", () => {
   bgColorValue.textContent = bgColor.value;
-  chrome.storage.sync.set({ bgColor: bgColor.value });
+  saveBgColor(bgColor.value);
 });
+
+// Debounce helper to avoid exceeding storage write quotas
+function debounce(fn, wait) {
+  let timer = null;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
+const saveFontSize = debounce((val) => {
+  chrome.storage.sync.set({ fontSize: Number(val) });
+}, 700);
+
+const saveMaxWidth = debounce((val) => {
+  chrome.storage.sync.set({ maxWidth: Number(val) });
+}, 700);
+
+const saveBgColor = debounce((val) => {
+  chrome.storage.sync.set({ bgColor: val });
+}, 700);
