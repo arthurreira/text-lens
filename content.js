@@ -54,30 +54,50 @@ function getReadableText(el) {
   }
   return "";
 }
-
 document.addEventListener("mousemove", (e) => {
   if (!active || !e.ctrlKey) return;
-
   lastEvent = e;
   if (rafPending) return;
-
   rafPending = true;
 
   requestAnimationFrame(() => {
     rafPending = false;
     if (!active || !lastEvent) return;
 
-    const el = document.elementFromPoint(lastEvent.clientX, lastEvent.clientY);
+    const { clientX, clientY, pageX, pageY } = lastEvent;
+    const el = document.elementFromPoint(clientX, clientY);
     if (!el) return;
 
     const text = getReadableText(el);
-
     if (text) {
-      lens.style.display = "block";
       lens.innerText = text.slice(0, 400);
+      lens.style.display = "block";
 
-      lens.style.left = lastEvent.pageX + 20 + "px";
-      lens.style.top = lastEvent.pageY + 20 + "px";
+      // measure lens after content is set
+      const lensHeight = lens.offsetHeight;
+      const lensWidth = lens.offsetWidth;
+      const offset = 20;
+
+      // vertical flip: not enough room below cursor -> show above
+      const spaceBelow = window.innerHeight - clientY;
+      let top;
+      if (spaceBelow < lensHeight + offset) {
+        top = pageY - lensHeight - offset; // place above cursor
+      } else {
+        top = pageY + offset; // default: below cursor
+      }
+
+      // horizontal clamp: keep it from overflowing right edge
+      const spaceRight = window.innerWidth - clientX;
+      let left;
+      if (spaceRight < lensWidth + offset) {
+        left = pageX - lensWidth - offset; // place left of cursor
+      } else {
+        left = pageX + offset; // default: right of cursor
+      }
+
+      lens.style.top = Math.max(top, 0) + "px";
+      lens.style.left = Math.max(left, 0) + "px";
     } else {
       lens.style.display = "none";
     }
