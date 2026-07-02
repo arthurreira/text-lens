@@ -1,6 +1,7 @@
 #text-lens {
   position: absolute;
   z-index: 999999;
+  width: 400px;
   max-width: 400px;
   padding: 14px;
 
