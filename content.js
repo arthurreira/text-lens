@@ -7,31 +7,38 @@ let rafPending = false;
 let lastEvent = null;
 let enabled = true;
 
-function applyBgColor(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
+let bgColorHex = "#f5f50a";
+let bgOpacity = 96;
 
-  // Keep the lens slightly translucent regardless of the chosen color
-  lens.style.background = `rgba(${r}, ${g}, ${b}, 0.96)`;
+// Opacity is applied to the background only, so the text stays fully readable
+function applyBackground() {
+  const r = parseInt(bgColorHex.slice(1, 3), 16);
+  const g = parseInt(bgColorHex.slice(3, 5), 16);
+  const b = parseInt(bgColorHex.slice(5, 7), 16);
+
+  lens.style.background = `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})`;
 
   // Pick light or dark text depending on background brightness
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   lens.style.color = luminance > 0.5 ? "#050505" : "#f5f5f5";
 }
 
-chrome.storage.sync.get(["enabled", "fontSize", "maxWidth", "bgColor"], (data) => {
+chrome.storage.sync.get(["enabled", "fontSize", "maxWidth", "bgColor", "opacity"], (data) => {
   enabled = data.enabled ?? true;
   lens.style.fontSize = (data.fontSize || 22) + "px";
   lens.style.maxWidth = (data.maxWidth || 400) + "px";
-  applyBgColor(data.bgColor || "#f5f50a");
+  bgColorHex = data.bgColor || "#f5f50a";
+  bgOpacity = data.opacity ?? 96;
+  applyBackground();
 });
 
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.enabled) enabled = changes.enabled.newValue;
   if (changes.fontSize) lens.style.fontSize = changes.fontSize.newValue + "px";
   if (changes.maxWidth) lens.style.maxWidth = changes.maxWidth.newValue + "px";
-  if (changes.bgColor) applyBgColor(changes.bgColor.newValue);
+  if (changes.bgColor) bgColorHex = changes.bgColor.newValue;
+  if (changes.opacity) bgOpacity = changes.opacity.newValue;
+  if (changes.bgColor || changes.opacity) applyBackground();
 });
 
 function activate(e) {
