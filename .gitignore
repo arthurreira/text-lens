@@ -1,0 +1,45 @@
+
+---
+
+# 🚫 `.gitignore`
+
+```gitignore
+# =========================
+# OS / system files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# =========================
+# Logs
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Dependencies (if you ever add Node tooling)
+# =========================
+node_modules/
+
+# =========================
+# Build / output folders (future-proofing)
+# =========================
+dist/
+build/
+out/
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
