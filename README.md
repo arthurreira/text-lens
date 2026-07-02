@@ -6,7 +6,7 @@ It’s designed for readability, accessibility, and quick text inspection withou
 
 ---
 
-## ✨ Features
+##  Features
 
 - Hold **Control (Ctrl)** + hover to magnify text
 - Works on most websites (`<all_urls>`)
@@ -16,7 +16,7 @@ It’s designed for readability, accessibility, and quick text inspection withou
 
 ---
 
-## 📦 Installation (Developer Mode)
+##  Installation (Developer Mode)
 
 Since this extension is not published on the Chrome Web Store yet:
 
