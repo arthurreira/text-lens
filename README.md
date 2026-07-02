@@ -22,4 +22,4 @@ Since this extension is not published on the Chrome Web Store yet:
 
 1. Download or clone this repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/text-lens-extension.git
+   git clone https://github.com/arthurreira/text-lens-extension.git
