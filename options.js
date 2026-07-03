@@ -7,12 +7,16 @@ const fontSizeValue = document.getElementById("fontSizeValue");
 const maxWidthValue = document.getElementById("maxWidthValue");
 const bgColorValue = document.getElementById("bgColorValue");
 const opacityValue = document.getElementById("opacityValue");
+const modifierSelect = document.getElementById("modifier");
 
-chrome.storage.sync.get(["fontSize", "maxWidth", "bgColor", "opacity"], (data) => {
+chrome.storage.sync.get(["fontSize", "maxWidth", "bgColor", "opacity", "modifier"], (data) => {
   fontSize.value = data.fontSize ?? 22;
   maxWidth.value = data.maxWidth ?? 400;
   bgColor.value = data.bgColor ?? "#f5f50a";
   opacity.value = data.opacity ?? 96;
+  let m = data.modifier || "Control";
+  if (m === "Alt" || m === "Control+Alt") m = "Control"; // migrate old/unsafe values
+  modifierSelect.value = m;
 
   fontSizeValue.textContent = fontSize.value;
   maxWidthValue.textContent = maxWidth.value;
@@ -64,3 +68,11 @@ const saveBgColor = debounce((val) => {
 const saveOpacity = debounce((val) => {
   chrome.storage.sync.set({ opacity: Number(val) });
 }, 700);
+
+const saveModifier = debounce((val) => {
+  chrome.storage.sync.set({ modifier: val });
+}, 700);
+
+modifierSelect.addEventListener("change", () => {
+  saveModifier(modifierSelect.value);
+});

@@ -1,3 +1,4 @@
+// Text Lens content script
 const lens = document.createElement("div");
 lens.id = "text-lens";
 document.body.appendChild(lens);
@@ -9,6 +10,10 @@ let enabled = true;
 
 let bgColorHex = "#f5f50a";
 let bgOpacity = 96;
+let modifier = "Control"; // 'Control' | 'Control+Shift'
+
+let isCtrlPressed = false;
+let isShiftPressed = false;
 
 // Opacity is applied to the background only, so the text stays fully readable
 function applyBackground() {
@@ -23,25 +28,40 @@ function applyBackground() {
   lens.style.color = luminance > 0.5 ? "#050505" : "#f5f5f5";
 }
 
-chrome.storage.sync.get(["enabled", "fontSize", "maxWidth", "bgColor", "opacity"], (data) => {
-  enabled = data.enabled ?? true;
-  lens.style.fontSize = (data.fontSize || 22) + "px";
-  lens.style.maxWidth = (data.maxWidth || 400) + "px";
-  bgColorHex = data.bgColor || "#f5f50a";
-  bgOpacity = data.opacity ?? 96;
-  applyBackground();
-});
+// Load saved settings (guard against extension reload invalidation)
+try {
+  chrome.storage.sync.get(["enabled", "fontSize", "maxWidth", "bgColor", "opacity", "modifier"], (data) => {
+    enabled = data.enabled ?? true;
+    lens.style.fontSize = (data.fontSize || 22) + "px";
+    lens.style.maxWidth = (data.maxWidth || 400) + "px";
+    bgColorHex = data.bgColor || "#f5f50a";
+    bgOpacity = data.opacity ?? 96;
+    modifier = data.modifier || modifier;
+    // migrate old/unsafe values: Alt and Control+Alt are problematic in browsers
+    if (modifier === "Alt" || modifier === "Control+Alt") modifier = "Control";
+    applyBackground();
+  });
+} catch (err) {
+  // Extension context might be invalidated during reload — fail gracefully
+}
 
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.enabled) enabled = changes.enabled.newValue;
-  if (changes.fontSize) lens.style.fontSize = changes.fontSize.newValue + "px";
-  if (changes.maxWidth) lens.style.maxWidth = changes.maxWidth.newValue + "px";
-  if (changes.bgColor) bgColorHex = changes.bgColor.newValue;
-  if (changes.opacity) bgOpacity = changes.opacity.newValue;
-  if (changes.bgColor || changes.opacity) applyBackground();
-});
+// Listen for setting changes
+try {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") return;
+    if (changes.enabled) enabled = changes.enabled.newValue;
+    if (changes.fontSize) lens.style.fontSize = changes.fontSize.newValue + "px";
+    if (changes.maxWidth) lens.style.maxWidth = changes.maxWidth.newValue + "px";
+    if (changes.bgColor) bgColorHex = changes.bgColor.newValue;
+    if (changes.opacity) bgOpacity = changes.opacity.newValue;
+    if (changes.modifier) modifier = changes.modifier.newValue;
+    if (changes.bgColor || changes.opacity) applyBackground();
+  });
+} catch (err) {
+  // onChanged registration shouldn't fail, but be defensive
+}
 
-function activate(e) {
+function activate() {
   if (!enabled) return;
   if (active) return;
   active = true;
@@ -55,13 +75,41 @@ function deactivate() {
   lastEvent = null;
 }
 
+function checkModifierActivation() {
+  if (modifier === "Control") {
+    if (isCtrlPressed) activate(); else deactivate();
+  } else if (modifier === "Control+Shift") {
+    if (isCtrlPressed && isShiftPressed) activate(); else deactivate();
+  }
+}
+
+// Track modifier key state
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Control") activate();
+  if (e.key === "Control") isCtrlPressed = true;
+  if (e.key === "Shift") isShiftPressed = true;
+  checkModifierActivation();
 }, true);
 
 document.addEventListener("keyup", (e) => {
-  if (e.key === "Control") deactivate();
+  if (e.key === "Control") isCtrlPressed = false;
+  if (e.key === "Shift") isShiftPressed = false;
+  checkModifierActivation();
 }, true);
+
+// Reset on window blur / visibility change to avoid "stuck" modifier state
+window.addEventListener("blur", () => {
+  isCtrlPressed = false;
+  isShiftPressed = false;
+  deactivate();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    isCtrlPressed = false;
+    isShiftPressed = false;
+    deactivate();
+  }
+});
 
 function getReadableText(el) {
   if (!el) return "";
@@ -76,8 +124,9 @@ function getReadableText(el) {
   }
   return "";
 }
+
 document.addEventListener("mousemove", (e) => {
-  if (!active || !e.ctrlKey) return;
+  if (!active) return;
   lastEvent = e;
   if (rafPending) return;
   rafPending = true;
